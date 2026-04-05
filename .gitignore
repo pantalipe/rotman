@@ -1,0 +1,44 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Output — generated files (videos, images, audio)
+output/
+
+# Database — local projects state
+db/projects.json
+
+# Models cache (diffusers / transformers baixam aqui)
+.cache/
+models/
+
+# HuggingFace cache
+~/.cache/huggingface/
+
+# Temp files from MoviePy
+temp_audio.m4a
+*.temp.*
+
+# Environment variables
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Logs
+*.log

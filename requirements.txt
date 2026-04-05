@@ -1,0 +1,19 @@
+# Ollama Python client (requer o app Ollama rodando — https://ollama.com)
+ollama
+
+# TTS — edge-tts (Microsoft, gratuito, sem limite, PT-BR)
+edge-tts
+
+# Text-to-Image — CPU via diffusers
+# torch instala versão CPU por padrão via PyPI (sem CUDA)
+torch
+diffusers
+transformers
+accelerate
+Pillow
+
+# Video editing
+moviepy
+
+# HTTP requests (HF API fallback)
+requests
