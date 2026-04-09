@@ -118,6 +118,33 @@ rotman/
 
 ---
 
+## Hardware
+
+Developed and tested on:
+
+| Component | Spec |
+|---|---|
+| CPU | Intel Xeon E3-1230 V2 |
+| RAM | 8 GB |
+| GPU | NVIDIA GT 730 (not used) |
+
+All pipeline steps run on CPU. The GPU is not used — diffusers runs in float32 CPU mode with attention slicing enabled to reduce memory pressure.
+
+**Expected times on similar hardware:**
+
+| Step | Time |
+|---|---|
+| Script generation (Ollama/phi3) | ~30–60s |
+| Audio narration per scene (edge-tts) | ~2–5s |
+| Image generation per scene (diffusers CPU) | ~5–10 min |
+| Video assembly (MoviePy) | ~1–2 min |
+
+A 10-scene video takes roughly **1–2 hours** end-to-end on CPU-only hardware, dominated by image generation. Using `HF_TOKEN` for the SDXL API fallback reduces image generation to seconds.
+
+16 GB RAM is recommended if running Ollama and diffusers simultaneously to avoid swap.
+
+---
+
 ## Roadmap
 
 - [ ] TikTok API integration
