@@ -115,8 +115,6 @@ def create_project(topic: str, channel: str) -> str:
         "created_at": datetime.now().isoformat(),
         "script": None,
         "video_path": None,
-        "scheduled_at": None,
-        "post_to": [],
         "error": None,
         "log": [],
     }

@@ -174,29 +174,6 @@
   .video-section { margin-bottom: 28px; }
   .video-section video { width: 100%; max-width: 560px; border: 1px solid var(--border); display: block; margin-top: 12px; }
 
-  /* SCHEDULE */
-  .schedule-section { border-top: 1px solid var(--border); padding-top: 24px; }
-  .schedule-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; margin-bottom: 18px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-  .platforms { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
-  .platform-btn {
-    display: flex; align-items: center; gap: 8px; padding: 9px 16px;
-    border: 1px solid var(--border); background: transparent; color: var(--muted);
-    cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px;
-    transition: all 0.15s; text-transform: uppercase;
-  }
-  .platform-btn.selected { border-color: var(--accent); color: var(--accent); }
-  .platform-btn .dot { width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 50%; transition: background 0.15s; }
-  .platform-btn.selected .dot { background: var(--accent); }
-  .schedule-row { display: flex; gap: 12px; align-items: flex-end; }
-  .schedule-row .field { flex: 1; margin-bottom: 0; }
-  .btn-schedule {
-    background: transparent; border: 1px solid var(--accent); color: var(--accent);
-    padding: 12px 24px; font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; white-space: nowrap; transition: all 0.15s;
-  }
-  .btn-schedule:hover { background: var(--accent); color: #000; }
-  .schedule-saved { margin-top: 10px; font-size: 11px; color: var(--green); display: none; }
-
   /* ANIMATIONS */
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   .pulsing { animation: pulse 1.4s ease-in-out infinite; }
@@ -253,22 +230,9 @@
 </div>
 
 <script>
-const STEPS = [
-  { key: 'queued',             label: 'Queued' },
-  { key: 'generating_script',  label: 'Script' },
-  { key: 'script_ready',       label: 'Script' },
-  { key: 'generating_audio',   label: 'Audio' },
-  { key: 'audio_ready',        label: 'Audio' },
-  { key: 'generating_images',  label: 'Images' },
-  { key: 'images_ready',       label: 'Images' },
-  { key: 'assembling',         label: 'Video' },
-  { key: 'done',               label: 'Done' },
-];
-
 const STEP_ORDER = ['Script', 'Audio', 'Images', 'Video', 'Done'];
 
 function stepState(currentStatus, stepLabel) {
-  const order = STEP_ORDER;
   const statusToStep = {
     queued: -1,
     generating_script: 0, script_ready: 0,
@@ -279,7 +243,7 @@ function stepState(currentStatus, stepLabel) {
     error: -2,
   };
   const currentIdx = statusToStep[currentStatus] ?? -1;
-  const stepIdx = order.indexOf(stepLabel);
+  const stepIdx = STEP_ORDER.indexOf(stepLabel);
   if (currentStatus === 'error') return 'error';
   if (stepIdx < currentIdx) return 'done';
   if (stepIdx === currentIdx) return 'active';
@@ -362,7 +326,6 @@ async function loadProjects() {
 // ── DETAIL ──────────────────────────────────────────────────────────────
 let detailInterval = null;
 let currentDetailId = null;
-const platformState = {};
 
 function openDetail(id) {
   currentDetailId = id;
@@ -391,13 +354,10 @@ async function loadDetail(id) {
 }
 
 function renderDetail(p) {
-  if (!platformState[p.id]) platformState[p.id] = [...(p.post_to || [])];
-  const sel = platformState[p.id];
   const title = p.script?.title || p.topic;
   const scenes = p.script?.scenes || [];
   const isActive = !['done','error'].includes(p.status);
 
-  // Steps bar
   const stepsHtml = `
     <div class="steps">
       ${STEP_ORDER.map(s => {
@@ -406,7 +366,6 @@ function renderDetail(p) {
       }).join('')}
     </div>`;
 
-  // Log
   const logs = p.log || [];
   const lastLog = logs[logs.length - 1] || statusText(p.status);
   const logLines = logs.slice(-6).map(l =>
@@ -422,7 +381,6 @@ function renderDetail(p) {
       <div class="pipeline-log">${logLines || `<span class="log-line">${lastLog}</span>`}</div>
     </div>`;
 
-  // Action buttons
   let actionsHtml = '<div class="action-bar">';
   if (p.status === 'error') {
     actionsHtml += `<button class="btn-action btn-retry" onclick="retryProject('${p.id}')">↺ Retry</button>`;
@@ -430,14 +388,12 @@ function renderDetail(p) {
   actionsHtml += `<button class="btn-action btn-delete" onclick="deleteProject('${p.id}')">✕ Delete</button>`;
   actionsHtml += '</div>';
 
-  // Video
   const videoHtml = p.status === 'done' ? `
     <div class="video-section">
       <p class="section-label">Final Video</p>
       <video controls src="/api/projects/${p.id}/video"></video>
     </div>` : '';
 
-  // Scenes
   const scenesHtml = scenes.length ? `
     <p class="section-label" style="margin-bottom:14px">Scenes (${scenes.length})</p>
     <div class="scenes-grid">
@@ -451,26 +407,6 @@ function renderDetail(p) {
         </div>`).join('')}
     </div>` : '';
 
-  // Schedule
-  const scheduleHtml = `
-    <div class="schedule-section">
-      <p class="schedule-title">Schedule & Publish</p>
-      <div class="platforms">
-        ${['tiktok','instagram','youtube'].map(pl => `
-          <button class="platform-btn ${sel.includes(pl) ? 'selected' : ''}" id="plat-${p.id}-${pl}" onclick="togglePlatform('${p.id}','${pl}')">
-            <span class="dot"></span>${pl}
-          </button>`).join('')}
-      </div>
-      <div class="schedule-row">
-        <div class="field">
-          <label>Scheduled date & time</label>
-          <input type="datetime-local" id="sched-${p.id}" value="${p.scheduled_at ? p.scheduled_at.slice(0,16) : ''}">
-        </div>
-        <button class="btn-schedule" onclick="saveSchedule('${p.id}')">Save</button>
-      </div>
-      <p class="schedule-saved" id="sched-saved-${p.id}">✓ Saved</p>
-    </div>`;
-
   document.getElementById('modal-detail-content').innerHTML = `
     <div class="detail-header">
       <div>
@@ -483,8 +419,7 @@ function renderDetail(p) {
     ${logHtml}
     ${actionsHtml}
     ${videoHtml}
-    ${scenesHtml}
-    ${scheduleHtml}`;
+    ${scenesHtml}`;
 }
 
 // ── ACTIONS ──────────────────────────────────────────────────────────────
@@ -500,26 +435,6 @@ async function deleteProject(id) {
   await fetch(`/api/projects/${id}`, { method: 'DELETE' });
   closeDetail();
   loadProjects();
-}
-
-function togglePlatform(projectId, platform) {
-  if (!platformState[projectId]) platformState[projectId] = [];
-  const arr = platformState[projectId];
-  const idx = arr.indexOf(platform);
-  if (idx === -1) arr.push(platform); else arr.splice(idx, 1);
-  const btn = document.getElementById(`plat-${projectId}-${platform}`);
-  if (btn) btn.classList.toggle('selected', arr.includes(platform));
-}
-
-async function saveSchedule(projectId) {
-  const dt = document.getElementById(`sched-${projectId}`)?.value || null;
-  await fetch(`/api/projects/${projectId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scheduled_at: dt, post_to: platformState[projectId] || [] }),
-  });
-  const el = document.getElementById(`sched-saved-${projectId}`);
-  if (el) { el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2000); }
 }
 
 // ── BOOT ─────────────────────────────────────────────────────────────────

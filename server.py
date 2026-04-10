@@ -77,19 +77,6 @@ class RotmanHandler(BaseHTTPRequestHandler):
         else:
             self._not_found()
 
-    def do_PATCH(self):
-        path = urlparse(self.path).path.rstrip("/")
-        parts = path.split("/")
-
-        # PATCH /api/projects/<id>
-        if path.startswith("/api/projects/") and len(parts) == 4:
-            updates = self._read_json()
-            allowed = {"scheduled_at", "post_to"}
-            pl.update_project(parts[3], {k: v for k, v in updates.items() if k in allowed})
-            self._json({"ok": True})
-        else:
-            self._not_found()
-
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip("/")
         parts = path.split("/")
