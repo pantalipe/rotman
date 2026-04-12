@@ -19,7 +19,7 @@ Topic (user input)
       └──▶  [MoviePy]    →  final .mp4
 ```
 
-Everything runs locally in a background thread. A web UI served at `http://localhost:7070` lets you manage projects, track pipeline progress and schedule posts.
+Everything runs locally in a background thread. A web UI served at `http://localhost:7070` lets you manage projects and track pipeline progress in real time.
 
 ---
 
@@ -84,7 +84,8 @@ Open **http://localhost:7070** in your browser.
    - One image is generated per scene
    - Final video is assembled
 4. Track progress in real time via the pipeline log
-5. Set a scheduled date and select platforms (TikTok, Instagram, YouTube) for future posting
+
+> Scheduling and social media posting are handled by a separate tool — [conduler](https://github.com/pantalipe/conduler).
 
 ---
 
@@ -147,10 +148,6 @@ A 10-scene video takes roughly **1–2 hours** end-to-end on CPU-only hardware, 
 
 ## Roadmap
 
-- [ ] TikTok API integration
-- [ ] Instagram API integration
-- [ ] YouTube API integration
-- [ ] Automatic scheduled posting
 - [ ] Per-channel voice and tone configuration
 - [ ] Scene image preview in UI
 - [ ] GPU acceleration support (when hardware allows)
