@@ -4,11 +4,13 @@ Returns structured JSON with scenes.
 Includes retry logic for malformed JSON responses.
 """
 import json
+import os
 import re
 import ollama
 
+PERSONAS_DIR = os.path.join(os.path.dirname(__file__), "..", "personas")
 
-SYSTEM_PROMPT = """You are a creative video script writer specialized in short-form content (60-90 seconds).
+BASE_SYSTEM_PROMPT = """You are a creative video script writer specialized in short-form content (60-90 seconds).
 Given a topic, generate a video script as a JSON object with the following structure:
 
 {
@@ -36,6 +38,42 @@ Rules:
 
 RETRY_PROMPT = """Your previous response had invalid JSON. Return ONLY the JSON object, nothing else.
 No markdown, no code blocks, no explanation. Start directly with { and end with }."""
+
+
+def _load_persona(channel: str) -> str:
+    """
+    Loads the persona file for the given channel name.
+    Looks for personas/persona_<channel>.txt (case-insensitive, spaces→underscores).
+    Returns the persona content or an empty string if not found.
+    """
+    slug = channel.lower().replace(" ", "_")
+    path = os.path.join(PERSONAS_DIR, f"persona_{slug}.txt")
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                content = f.read().strip()
+            print(f"[llm] Persona loaded: persona_{slug}.txt")
+            return content
+        except Exception as e:
+            print(f"[llm] Warning: could not read persona file: {e}")
+    else:
+        print(f"[llm] No persona file found for channel '{channel}' (looked for persona_{slug}.txt)")
+    return ""
+
+
+def _build_system_prompt(channel: str) -> str:
+    """Builds the final system prompt, injecting persona if available."""
+    persona = _load_persona(channel)
+    if not persona:
+        return BASE_SYSTEM_PROMPT
+
+    return (
+        "CHANNEL PERSONA — follow these instructions for tone, language and content:\n\n"
+        + persona
+        + "\n\n"
+        + "---\n\n"
+        + BASE_SYSTEM_PROMPT
+    )
 
 
 def _extract_json(raw: str) -> dict:
@@ -68,11 +106,14 @@ def _extract_json(raw: str) -> dict:
 def generate_script(topic: str, channel: str = "general", model: str = "phi3", max_retries: int = 3) -> dict:
     """
     Call Ollama to generate a structured video script.
+    Loads a channel persona from personas/persona_<channel>.txt if available.
     Retries up to max_retries times on JSON parse failure.
     """
+    system_prompt = _build_system_prompt(channel)
     user_message = f"Channel: {channel}\nTopic: {topic}"
+
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_message},
     ]
 
@@ -100,7 +141,6 @@ def generate_script(topic: str, channel: str = "general", model: str = "phi3", m
         except (ValueError, json.JSONDecodeError) as e:
             print(f"[llm] Attempt {attempt} failed: {e}")
             if attempt < max_retries:
-                # Add the bad response and a correction request to the conversation
                 messages.append({"role": "assistant", "content": raw})
                 messages.append({"role": "user", "content": RETRY_PROMPT})
 
