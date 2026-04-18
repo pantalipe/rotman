@@ -18,27 +18,67 @@
     --muted: #555;
     --green: #00ff88;
     --red: #ff4444;
+    --blue: #4da6ff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; }
 
+  /* ── HEADER ── */
   header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 24px 40px; border-bottom: 1px solid var(--border);
     position: sticky; top: 0; background: var(--bg); z-index: 100;
+    gap: 24px;
   }
-  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; flex-shrink: 0; }
   .logo span { color: var(--accent); }
+
+  /* ── NAV TABS ── */
+  .nav-tabs { display: flex; gap: 0; border: 1px solid var(--border); }
+  .nav-tab {
+    padding: 8px 20px; font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+    background: transparent; border: none; color: var(--muted);
+    border-right: 1px solid var(--border); transition: all 0.15s;
+  }
+  .nav-tab:last-child { border-right: none; }
+  .nav-tab:hover { color: var(--text); background: var(--surface); }
+  .nav-tab.active { color: var(--accent); background: var(--surface); }
+
+  .header-right { display: flex; gap: 12px; align-items: center; margin-left: auto; }
+
   .btn-new {
     background: var(--accent); color: #000; border: none; padding: 10px 24px;
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
     letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.15s;
+    flex-shrink: 0;
   }
   .btn-new:hover { background: #fff; }
 
+  .btn-queue {
+    background: transparent; color: var(--accent2); border: 1px solid var(--accent2);
+    padding: 10px 20px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.15s;
+    flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  }
+  .btn-queue:hover { background: var(--accent2); color: #000; }
+
+  .queue-badge {
+    background: var(--accent2); color: #000; border-radius: 2px;
+    padding: 1px 6px; font-size: 10px; font-weight: 700;
+    display: none;
+  }
+  .queue-badge.visible { display: inline-block; }
+
+  /* ── MAIN ── */
   main { padding: 40px; max-width: 1400px; margin: 0 auto; }
   .section-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 24px; }
 
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── PROJECTS GRID ── */
   .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
 
   .project-card {
@@ -58,21 +98,120 @@
   .card-date { font-size: 10px; color: var(--muted); }
 
   .status-badge { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border: 1px solid; }
-  .status-queued        { color: var(--muted); border-color: var(--muted); }
+  .status-queued        { color: var(--muted);   border-color: var(--muted); }
+  .status-pending       { color: var(--muted);   border-color: var(--muted); }
   .status-generating_script,
   .status-script_ready,
   .status-generating_audio,
-  .status-audio_ready   { color: var(--accent); border-color: var(--accent); }
+  .status-audio_ready   { color: var(--accent);  border-color: var(--accent); }
   .status-generating_images,
   .status-images_ready,
   .status-assembling    { color: var(--accent2); border-color: var(--accent2); }
-  .status-done          { color: var(--green); border-color: var(--green); }
-  .status-error         { color: var(--red); border-color: var(--red); }
+  .status-processing    { color: var(--blue);    border-color: var(--blue); }
+  .status-done          { color: var(--green);   border-color: var(--green); }
+  .status-error         { color: var(--red);     border-color: var(--red); }
 
   .empty-state { grid-column: 1 / -1; text-align: center; padding: 80px 0; color: var(--muted); }
   .empty-state h2 { font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 8px; color: var(--surface2); }
 
-  /* MODALS */
+  /* ── QUEUE VIEW ── */
+  .queue-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px; gap: 16px; flex-wrap: wrap;
+  }
+
+  .queue-stats { display: flex; gap: 20px; }
+  .q-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .q-stat-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; line-height: 1; }
+  .q-stat-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+  .queue-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .btn-process {
+    background: var(--accent); color: #000; border: none; padding: 10px 24px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-process:hover { background: #fff; }
+  .btn-process:disabled { background: var(--muted); cursor: not-allowed; }
+
+  .btn-secondary {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    padding: 10px 16px; font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--text); }
+
+  /* Queue list */
+  .queue-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; }
+
+  .queue-item {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 16px 20px; display: flex; align-items: center; gap: 16px;
+    transition: border-color 0.15s; position: relative; overflow: hidden;
+  }
+  .queue-item::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  }
+  .queue-item.status-pending::before    { background: var(--muted); }
+  .queue-item.status-processing::before { background: var(--blue); }
+  .queue-item.status-done::before       { background: var(--green); }
+  .queue-item.status-error::before      { background: var(--red); }
+
+  .queue-item-num {
+    font-size: 10px; color: var(--muted); width: 28px; text-align: right; flex-shrink: 0;
+  }
+  .queue-item-body { flex: 1; min-width: 0; }
+  .queue-item-channel {
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent2); margin-bottom: 3px;
+  }
+  .queue-item-topic {
+    font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .queue-item-date { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+  .queue-item-status { flex-shrink: 0; }
+  .queue-item-link {
+    font-size: 10px; color: var(--blue); cursor: pointer; flex-shrink: 0;
+    text-decoration: none; letter-spacing: 1px; text-transform: uppercase;
+    border-bottom: 1px solid transparent; transition: border-color 0.15s;
+  }
+  .queue-item-link:hover { border-bottom-color: var(--blue); }
+  .queue-item-del {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 14px; padding: 2px 6px; transition: color 0.15s; flex-shrink: 0;
+  }
+  .queue-item-del:hover { color: var(--red); }
+
+  /* Add to queue section */
+  .add-queue-box {
+    background: var(--surface); border: 1px solid var(--border); padding: 28px 32px; margin-bottom: 28px;
+  }
+  .add-queue-title {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .add-queue-title span { color: var(--accent); }
+  .add-queue-row { display: grid; grid-template-columns: 1fr 180px auto; gap: 12px; align-items: end; }
+  .field-inline label {
+    display: block; font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .field-inline input, .field-inline textarea, .field-inline select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 12px; outline: none;
+    transition: border-color 0.2s; resize: none;
+  }
+  .field-inline input:focus,
+  .field-inline textarea:focus,
+  .field-inline select:focus { border-color: var(--accent); }
+  .field-inline select option { background: var(--surface); }
+
+  .batch-hint {
+    font-size: 10px; color: var(--muted); margin-top: 8px; line-height: 1.6;
+  }
+
+  /* ── MODALS ── */
   .modal-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center;
@@ -107,7 +246,7 @@
   }
   .btn-cancel:hover { color: var(--text); border-color: var(--text); }
 
-  /* DETAIL */
+  /* ── DETAIL MODAL ── */
   .modal-detail {
     background: var(--surface); border: 1px solid var(--border);
     width: 900px; max-width: 95vw; max-height: 90vh; overflow-y: auto; padding: 40px;
@@ -122,7 +261,6 @@
   }
   .btn-close:hover { color: var(--text); border-color: var(--text); }
 
-  /* PIPELINE LOG */
   .pipeline-box { background: var(--bg); border: 1px solid var(--border); margin-bottom: 28px; }
   .pipeline-box-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -136,18 +274,16 @@
   .pipeline-log .log-line { display: block; }
   .pipeline-log .log-line.error { color: var(--red); }
 
-  /* ACTION BUTTONS */
   .action-bar { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
   .btn-action {
     padding: 9px 20px; font-family: 'DM Mono', monospace; font-size: 11px;
     letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border: 1px solid;
   }
-  .btn-retry { color: var(--accent); border-color: var(--accent); background: transparent; }
-  .btn-retry:hover { background: var(--accent); color: #000; }
+  .btn-retry  { color: var(--accent); border-color: var(--accent); background: transparent; }
+  .btn-retry:hover  { background: var(--accent); color: #000; }
   .btn-delete { color: var(--red); border-color: var(--red); background: transparent; }
   .btn-delete:hover { background: var(--red); color: #000; }
 
-  /* PIPELINE STEPS */
   .steps { display: flex; gap: 0; margin-bottom: 28px; }
   .step {
     flex: 1; text-align: center; padding: 10px 4px;
@@ -156,12 +292,11 @@
   }
   .step:last-child { border-right: 1px solid var(--border); }
   .step.active { color: var(--accent); border-color: var(--accent); background: rgba(232,255,0,0.04); }
-  .step.done { color: var(--green); border-color: var(--border); }
-  .step.error { color: var(--red); border-color: var(--red); }
+  .step.done   { color: var(--green); border-color: var(--border); }
+  .step.error  { color: var(--red);   border-color: var(--red); }
 
-  /* SCENES */
   .scenes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 28px; }
-  .scene-card { background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+  .scene-card  { background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
   .scene-img-placeholder {
     width: 100%; aspect-ratio: 16/9; background: var(--surface2);
     display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--muted);
@@ -170,14 +305,23 @@
   .scene-num { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
   .scene-narration { font-size: 11px; line-height: 1.5; }
 
-  /* VIDEO */
   .video-section { margin-bottom: 28px; }
   .video-section video { width: 100%; max-width: 560px; border: 1px solid var(--border); display: block; margin-top: 12px; }
 
-  /* ANIMATIONS */
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 300;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 14px 20px; font-size: 12px; letter-spacing: 0.5px;
+    transform: translateY(20px); opacity: 0; transition: all 0.25s;
+    border-left: 3px solid var(--accent); max-width: 360px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-left-color: var(--red); }
+
+  /* ── MISC ── */
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   .pulsing { animation: pulse 1.4s ease-in-out infinite; }
-
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border); }
@@ -187,14 +331,77 @@
 
 <header>
   <div class="logo">ROT<span>MAN</span></div>
-  <button class="btn-new" onclick="openNewModal()">+ New Video</button>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-projects" onclick="switchView('projects')">Projects</button>
+    <button class="nav-tab"        id="tab-queue"    onclick="switchView('queue')">
+      Queue <span class="queue-badge" id="queue-badge">0</span>
+    </button>
+  </div>
+
+  <div class="header-right">
+    <button class="btn-new" onclick="openNewModal()">+ New Video</button>
+  </div>
 </header>
 
 <main>
-  <p class="section-label">Projects</p>
-  <div class="projects-grid" id="projects-grid">
-    <div class="empty-state"><h2>No videos yet</h2><p>Click "New Video" to get started</p></div>
+
+  <!-- ── PROJECTS VIEW ── -->
+  <div class="view active" id="view-projects">
+    <p class="section-label">Projects</p>
+    <div class="projects-grid" id="projects-grid">
+      <div class="empty-state"><h2>No videos yet</h2><p>Click "New Video" to get started</p></div>
+    </div>
   </div>
+
+  <!-- ── QUEUE VIEW ── -->
+  <div class="view" id="view-queue">
+
+    <!-- Add to queue -->
+    <div class="add-queue-box">
+      <div class="add-queue-title">Add to <span>Queue</span></div>
+      <div class="add-queue-row">
+        <div class="field-inline">
+          <label>Topics <span style="color:var(--muted);font-size:9px">— one per line for batch</span></label>
+          <textarea id="q-topics" rows="4" placeholder="What is Bitcoin halving and why it matters&#10;How Lightning Network makes Bitcoin payments instant&#10;The story of Satoshi Nakamoto"></textarea>
+        </div>
+        <div class="field-inline">
+          <label>Channel</label>
+          <select id="q-channel">
+            <option value="bitcoinfacil">bitcoinfacil</option>
+            <option value="pandapoints">PandaPoints</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="field-inline">
+          <label>&nbsp;</label>
+          <button class="btn-primary" onclick="addToQueue()" style="width:100%;padding:10px">Add</button>
+        </div>
+      </div>
+      <p class="batch-hint">Enter one topic per line to add multiple videos at once. All items start with status <strong>pending</strong> and are processed one at a time when you click "Process Next".</p>
+    </div>
+
+    <!-- Queue controls -->
+    <div class="queue-top">
+      <div class="queue-stats" id="queue-stats">
+        <div class="q-stat"><div class="q-stat-val" id="qs-pending" style="color:var(--muted)">—</div><div class="q-stat-lbl">Pending</div></div>
+        <div class="q-stat"><div class="q-stat-val" id="qs-processing" style="color:var(--blue)">—</div><div class="q-stat-lbl">Processing</div></div>
+        <div class="q-stat"><div class="q-stat-val" id="qs-done" style="color:var(--green)">—</div><div class="q-stat-lbl">Done</div></div>
+        <div class="q-stat"><div class="q-stat-val" id="qs-error" style="color:var(--red)">—</div><div class="q-stat-lbl">Error</div></div>
+      </div>
+      <div class="queue-actions">
+        <button class="btn-secondary" onclick="clearDone()">Clear done</button>
+        <button class="btn-process" id="btn-process" onclick="processNext()">▶ Process Next</button>
+      </div>
+    </div>
+
+    <p class="section-label">Queue Items</p>
+    <div class="queue-list" id="queue-list">
+      <div style="color:var(--muted);font-size:12px;padding:40px 0;text-align:center">Queue is empty — add topics above</div>
+    </div>
+
+  </div>
+
 </main>
 
 <!-- NEW VIDEO MODAL -->
@@ -229,9 +436,22 @@
   <div class="modal-detail" id="modal-detail-content"></div>
 </div>
 
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <script>
 const STEP_ORDER = ['Script', 'Audio', 'Images', 'Video', 'Done'];
 
+// ── VIEW SWITCH ──────────────────────────────────────────────────────────
+function switchView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  document.getElementById(`tab-${view}`).classList.add('active');
+  if (view === 'queue') loadQueue();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────
 function stepState(currentStatus, stepLabel) {
   const statusToStep = {
     queued: -1,
@@ -239,33 +459,43 @@ function stepState(currentStatus, stepLabel) {
     generating_audio: 1,  audio_ready: 1,
     generating_images: 2, images_ready: 2,
     assembling: 3,
-    done: 4,
-    error: -2,
+    done: 4, error: -2,
   };
   const currentIdx = statusToStep[currentStatus] ?? -1;
-  const stepIdx = STEP_ORDER.indexOf(stepLabel);
+  const stepIdx    = STEP_ORDER.indexOf(stepLabel);
   if (currentStatus === 'error') return 'error';
-  if (stepIdx < currentIdx) return 'done';
+  if (stepIdx < currentIdx)  return 'done';
   if (stepIdx === currentIdx) return 'active';
   return '';
 }
 
 function statusText(s) {
   return {
-    queued: 'Queued',
-    generating_script: 'Writing script...',
-    script_ready: 'Script ready',
-    generating_audio: 'Generating audio...',
-    audio_ready: 'Audio ready',
-    generating_images: 'Generating images...',
-    images_ready: 'Images ready',
-    assembling: 'Assembling video...',
-    done: 'Done ✓',
-    error: 'Error',
+    queued:             'Queued',
+    pending:            'Pending',
+    processing:         'Processing...',
+    generating_script:  'Writing script...',
+    script_ready:       'Script ready',
+    generating_audio:   'Generating audio...',
+    audio_ready:        'Audio ready',
+    generating_images:  'Generating images...',
+    images_ready:       'Images ready',
+    assembling:         'Assembling...',
+    done:               'Done ✓',
+    error:              'Error',
   }[s] || s;
 }
 
-// ── MODAL NEW ──────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show${isError ? ' error' : ''}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── MODAL NEW ────────────────────────────────────────────────────────────
 function openNewModal() {
   document.getElementById('modal-new').classList.add('open');
   setTimeout(() => document.getElementById('new-topic').focus(), 50);
@@ -281,9 +511,9 @@ document.getElementById('modal-new').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeNewModal();
 });
 
-// ── CREATE ──────────────────────────────────────────────────────────────
+// ── CREATE DIRECT ────────────────────────────────────────────────────────
 async function createProject() {
-  const topic = document.getElementById('new-topic').value.trim();
+  const topic   = document.getElementById('new-topic').value.trim();
   const channel = document.getElementById('new-channel').value;
   if (!topic) return;
   const btn = document.getElementById('btn-generate');
@@ -295,20 +525,21 @@ async function createProject() {
   });
   closeNewModal();
   loadProjects();
+  switchView('projects');
 }
 
-// ── LIST ────────────────────────────────────────────────────────────────
+// ── PROJECTS ─────────────────────────────────────────────────────────────
 async function loadProjects() {
-  const res = await fetch('/api/projects');
+  const res      = await fetch('/api/projects');
   const projects = await res.json();
-  const grid = document.getElementById('projects-grid');
+  const grid     = document.getElementById('projects-grid');
   if (!projects.length) {
     grid.innerHTML = '<div class="empty-state"><h2>No videos yet</h2><p>Click "New Video" to get started</p></div>';
     return;
   }
   grid.innerHTML = projects.map(p => {
-    const title = p.script?.title || p.topic;
-    const date = new Date(p.created_at).toLocaleDateString('pt-BR');
+    const title    = p.script?.title || p.topic;
+    const date     = new Date(p.created_at).toLocaleDateString('pt-BR');
     const isActive = !['done','error'].includes(p.status);
     return `
       <div class="project-card" onclick="openDetail('${p.id}')">
@@ -323,8 +554,8 @@ async function loadProjects() {
   }).join('');
 }
 
-// ── DETAIL ──────────────────────────────────────────────────────────────
-let detailInterval = null;
+// ── DETAIL ───────────────────────────────────────────────────────────────
+let detailInterval  = null;
 let currentDetailId = null;
 
 function openDetail(id) {
@@ -336,7 +567,7 @@ function openDetail(id) {
 function closeDetail() {
   document.getElementById('modal-detail').classList.remove('open');
   clearInterval(detailInterval);
-  detailInterval = null;
+  detailInterval  = null;
   currentDetailId = null;
 }
 document.getElementById('modal-detail').addEventListener('click', e => {
@@ -345,7 +576,7 @@ document.getElementById('modal-detail').addEventListener('click', e => {
 
 async function loadDetail(id) {
   const res = await fetch('/api/projects/' + id);
-  const p = await res.json();
+  const p   = await res.json();
   if (['done','error'].includes(p.status)) {
     clearInterval(detailInterval);
     loadProjects();
@@ -354,8 +585,8 @@ async function loadDetail(id) {
 }
 
 function renderDetail(p) {
-  const title = p.script?.title || p.topic;
-  const scenes = p.script?.scenes || [];
+  const title    = p.script?.title || p.topic;
+  const scenes   = p.script?.scenes || [];
   const isActive = !['done','error'].includes(p.status);
 
   const stepsHtml = `
@@ -366,11 +597,11 @@ function renderDetail(p) {
       }).join('')}
     </div>`;
 
-  const logs = p.log || [];
-  const lastLog = logs[logs.length - 1] || statusText(p.status);
+  const logs    = p.log || [];
   const logLines = logs.slice(-6).map(l =>
     `<span class="log-line ${l.includes('Error') ? 'error' : ''}">${l}</span>`
   ).join('');
+  const lastLog = logs[logs.length - 1] || statusText(p.status);
 
   const logHtml = `
     <div class="pipeline-box">
@@ -382,9 +613,8 @@ function renderDetail(p) {
     </div>`;
 
   let actionsHtml = '<div class="action-bar">';
-  if (p.status === 'error') {
+  if (p.status === 'error')
     actionsHtml += `<button class="btn-action btn-retry" onclick="retryProject('${p.id}')">↺ Retry</button>`;
-  }
   actionsHtml += `<button class="btn-action btn-delete" onclick="deleteProject('${p.id}')">✕ Delete</button>`;
   actionsHtml += '</div>';
 
@@ -422,7 +652,6 @@ function renderDetail(p) {
     ${scenesHtml}`;
 }
 
-// ── ACTIONS ──────────────────────────────────────────────────────────────
 async function retryProject(id) {
   await fetch(`/api/projects/${id}/retry`, { method: 'POST' });
   loadProjects();
@@ -437,9 +666,125 @@ async function deleteProject(id) {
   loadProjects();
 }
 
+// ── QUEUE ─────────────────────────────────────────────────────────────────
+async function loadQueue() {
+  const res  = await fetch('/api/queue');
+  const data = await res.json();
+
+  // Stats
+  const s = data.stats;
+  document.getElementById('qs-pending').textContent    = s.pending;
+  document.getElementById('qs-processing').textContent = s.processing;
+  document.getElementById('qs-done').textContent       = s.done;
+  document.getElementById('qs-error').textContent      = s.error;
+
+  // Badge
+  const badge = document.getElementById('queue-badge');
+  badge.textContent = s.pending;
+  badge.classList.toggle('visible', s.pending > 0);
+
+  // Process button
+  const btnProcess = document.getElementById('btn-process');
+  btnProcess.disabled = s.pending === 0 || s.processing > 0;
+  if (s.processing > 0) btnProcess.textContent = '⏳ Processing...';
+  else btnProcess.textContent = '▶ Process Next';
+
+  // List
+  const list = document.getElementById('queue-list');
+  if (!data.items.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:40px 0;text-align:center">Queue is empty — add topics above</div>';
+    return;
+  }
+
+  list.innerHTML = data.items.map((item, idx) => {
+    const date     = new Date(item.added_at).toLocaleDateString('pt-BR');
+    const isActive = item.status === 'processing';
+    const linkHtml = item.project_id
+      ? `<span class="queue-item-link" onclick="openDetail('${item.project_id}')">View →</span>`
+      : '';
+    const canDelete = item.status !== 'processing';
+
+    return `
+      <div class="queue-item status-${item.status}">
+        <div class="queue-item-num">${idx + 1}</div>
+        <div class="queue-item-body">
+          <div class="queue-item-channel">${item.channel}</div>
+          <div class="queue-item-topic">${item.topic}</div>
+        </div>
+        <div class="queue-item-date">${date}</div>
+        <div class="queue-item-status">
+          <span class="status-badge status-${item.status} ${isActive ? 'pulsing' : ''}">${statusText(item.status)}</span>
+        </div>
+        ${linkHtml}
+        ${canDelete ? `<button class="queue-item-del" onclick="removeQueueItem('${item.id}')" title="Remove">✕</button>` : '<div style="width:28px"></div>'}
+      </div>`;
+  }).join('');
+}
+
+async function addToQueue() {
+  const raw     = document.getElementById('q-topics').value.trim();
+  const channel = document.getElementById('q-channel').value;
+  if (!raw) return;
+
+  const topics = raw.split('\n').map(t => t.trim()).filter(Boolean);
+  if (!topics.length) return;
+
+  const res  = await fetch('/api/queue', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ topics, channel }),
+  });
+  const data = await res.json();
+
+  document.getElementById('q-topics').value = '';
+  showToast(`✓ ${data.created} item${data.created !== 1 ? 's' : ''} added to queue`);
+  loadQueue();
+}
+
+async function processNext() {
+  const btn = document.getElementById('btn-process');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Starting...';
+
+  const res  = await fetch('/api/queue/process', { method: 'POST' });
+  const data = await res.json();
+
+  if (data.ok) {
+    showToast(`▶ Processing: "${data.item.topic}"`);
+    loadQueue();
+    loadProjects();
+    // Switch to projects view so user can watch progress
+    switchView('projects');
+  } else {
+    showToast(data.message || 'No pending items', true);
+    btn.disabled    = false;
+    btn.textContent = '▶ Process Next';
+  }
+}
+
+async function removeQueueItem(id) {
+  await fetch(`/api/queue/${id}`, { method: 'DELETE' });
+  loadQueue();
+}
+
+async function clearDone() {
+  const res  = await fetch('/api/queue/clear_done', { method: 'POST' });
+  const data = await res.json();
+  showToast(`✓ ${data.removed} done item${data.removed !== 1 ? 's' : ''} removed`);
+  loadQueue();
+}
+
 // ── BOOT ─────────────────────────────────────────────────────────────────
 loadProjects();
 setInterval(loadProjects, 5000);
+setInterval(() => {
+  // Keep queue badge updated even when on projects view
+  fetch('/api/queue').then(r => r.json()).then(data => {
+    const badge = document.getElementById('queue-badge');
+    badge.textContent = data.stats.pending;
+    badge.classList.toggle('visible', data.stats.pending > 0);
+  }).catch(() => {});
+}, 8000);
 </script>
 </body>
 </html>

@@ -11,6 +11,7 @@ from core.llm import generate_script
 from core.tts import generate_audio
 from core.imgen import generate_image
 from core.editor import build_video
+import topic_queue as tq
 
 OUTPUT_ROOT = os.path.join(os.path.dirname(__file__), "output")
 DB_PATH = os.path.join(os.path.dirname(__file__), "db", "projects.json")
@@ -46,19 +47,37 @@ def _set_status(projects: list, project: dict, status: str, log: str = None):
     _save_db(projects)
 
 
-def _run_pipeline(project_id: str):
+def _get_image_prompt(scene: dict, topic: str = "") -> str:
+    """
+    Safely retrieves the image prompt from a scene dict.
+    Falls back gracefully if the field is missing or empty.
+    """
+    prompt = scene.get("image_prompt") or scene.get("image") or scene.get("prompt") or ""
+    if not prompt.strip():
+        # Build a generic but usable prompt from the narration
+        narration = scene.get("narration", topic or "abstract concept")
+        prompt = f"photorealistic illustration of: {narration[:80]}"
+        print(f"[pipeline] Warning: scene {scene.get('id', '?')} missing image_prompt, using fallback")
+    return prompt.strip()
+
+
+def _run_pipeline(project_id: str, queue_item_id: str = None):
+    """
+    Runs the full pipeline for a project.
+    If queue_item_id is provided, updates the queue item status on completion.
+    """
     projects = _load_db()
-    project = next((p for p in projects if p["id"] == project_id), None)
+    project  = next((p for p in projects if p["id"] == project_id), None)
     if not project:
         return
 
-    topic = project["topic"]
+    topic   = project["topic"]
     channel = project["channel"]
 
     try:
         proj_dir = os.path.join(OUTPUT_ROOT, project_id)
-        img_dir = os.path.join(proj_dir, "images")
-        aud_dir = os.path.join(proj_dir, "audio")
+        img_dir  = os.path.join(proj_dir, "images")
+        aud_dir  = os.path.join(proj_dir, "audio")
         os.makedirs(img_dir, exist_ok=True)
         os.makedirs(aud_dir, exist_ok=True)
 
@@ -72,9 +91,10 @@ def _run_pipeline(project_id: str):
         # Step 2 — TTS
         _set_status(projects, project, "generating_audio", "Generating audio narration...")
         for scene in script["scenes"]:
-            sid = scene["id"]
+            sid        = scene.get("id", 0)
+            narration  = scene.get("narration", "")
             audio_path = os.path.join(aud_dir, f"audio_{sid}.mp3")
-            generate_audio(scene["narration"], audio_path)
+            generate_audio(narration, audio_path)
             _set_status(projects, project, "generating_audio",
                         f"Audio {sid}/{len(script['scenes'])} done")
 
@@ -84,11 +104,12 @@ def _run_pipeline(project_id: str):
         _set_status(projects, project, "generating_images",
                     "Generating images (CPU mode — this will take a while)...")
         for scene in script["scenes"]:
-            sid = scene["id"]
-            img_path = os.path.join(img_dir, f"image_{sid}.png")
+            sid          = scene.get("id", 0)
+            image_prompt = _get_image_prompt(scene, topic)
+            img_path     = os.path.join(img_dir, f"image_{sid}.png")
             _set_status(projects, project, "generating_images",
-                        f"Image {sid}/{len(script['scenes'])}: {scene['image_prompt'][:60]}...")
-            generate_image(scene["image_prompt"], img_path)
+                        f"Image {sid}/{len(script['scenes'])}: {image_prompt[:60]}...")
+            generate_image(image_prompt, img_path)
 
         _set_status(projects, project, "images_ready", "All images ready")
 
@@ -100,23 +121,28 @@ def _run_pipeline(project_id: str):
         project["video_path"] = video_path
         _set_status(projects, project, "done", "Pipeline complete!")
 
+        if queue_item_id:
+            tq.mark_done(queue_item_id)
+
     except Exception as e:
         project["error"] = str(e)
         _set_status(projects, project, "error", f"Error: {e}")
+        if queue_item_id:
+            tq.mark_error(queue_item_id, str(e))
 
 
 def create_project(topic: str, channel: str) -> str:
     project_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     project = {
-        "id": project_id,
-        "topic": topic,
-        "channel": channel,
-        "status": "queued",
+        "id":         project_id,
+        "topic":      topic,
+        "channel":    channel,
+        "status":     "queued",
         "created_at": datetime.now().isoformat(),
-        "script": None,
+        "script":     None,
         "video_path": None,
-        "error": None,
-        "log": [],
+        "error":      None,
+        "log":        [],
     }
     projects = _load_db()
     projects.insert(0, project)
@@ -126,21 +152,67 @@ def create_project(topic: str, channel: str) -> str:
     return project_id
 
 
+def process_next_from_queue() -> dict | None:
+    """
+    Takes the next pending item from the queue, creates a pipeline project
+    for it, and starts processing in background.
+    Returns the queue item with updated status, or None if queue is empty.
+    """
+    item = tq.next_pending()
+    if not item:
+        return None
+
+    project_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    project = {
+        "id":            project_id,
+        "topic":         item["topic"],
+        "channel":       item["channel"],
+        "status":        "queued",
+        "created_at":    datetime.now().isoformat(),
+        "script":        None,
+        "video_path":    None,
+        "error":         None,
+        "log":           [f"[{datetime.now().strftime('%H:%M:%S')}] Started from queue item {item['id']}"],
+        "queue_item_id": item["id"],
+    }
+    projects = _load_db()
+    projects.insert(0, project)
+    _save_db(projects)
+
+    tq.mark_processing(item["id"], project_id)
+
+    threading.Thread(
+        target=_run_pipeline,
+        args=(project_id, item["id"]),
+        daemon=True,
+    ).start()
+
+    item["status"]     = "processing"
+    item["project_id"] = project_id
+    return item
+
+
 def retry_project(project_id: str) -> bool:
     """Reset a failed project and re-run the pipeline from scratch."""
     projects = _load_db()
-    project = next((p for p in projects if p["id"] == project_id), None)
+    project  = next((p for p in projects if p["id"] == project_id), None)
     if not project or project["status"] not in ("error",):
         return False
 
-    project["status"] = "queued"
-    project["error"] = None
-    project["log"] = []
-    project["script"] = None
+    queue_item_id = project.get("queue_item_id")
+
+    project["status"]     = "queued"
+    project["error"]      = None
+    project["log"]        = []
+    project["script"]     = None
     project["video_path"] = None
     _save_db(projects)
 
-    threading.Thread(target=_run_pipeline, args=(project_id,), daemon=True).start()
+    threading.Thread(
+        target=_run_pipeline,
+        args=(project_id, queue_item_id),
+        daemon=True,
+    ).start()
     return True
 
 

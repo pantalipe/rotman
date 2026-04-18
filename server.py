@@ -9,8 +9,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
 import pipeline as pl
+import topic_queue as tq
 
-UI_DIR = os.path.join(os.path.dirname(__file__), "ui")
+UI_DIR      = os.path.join(os.path.dirname(__file__), "ui")
 OUTPUT_ROOT = os.path.join(os.path.dirname(__file__), "output")
 
 HOST = "localhost"
@@ -22,6 +23,7 @@ class RotmanHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         print(f"[server] {self.address_string()} {format % args}")
 
+    # ── GET ──────────────────────────────────────────────────────────────
     def do_GET(self):
         path = urlparse(self.path).path.rstrip("/")
 
@@ -33,13 +35,9 @@ class RotmanHandler(BaseHTTPRequestHandler):
 
         elif path.startswith("/api/projects/"):
             parts = path.split("/")
-
-            # GET /api/projects/<id>
             if len(parts) == 4:
                 p = pl.get_project(parts[3])
                 self._json(p) if p else self._not_found()
-
-            # GET /api/projects/<id>/video
             elif len(parts) == 5 and parts[4] == "video":
                 p = pl.get_project(parts[3])
                 if p and p.get("video_path") and os.path.exists(p["video_path"]):
@@ -48,16 +46,20 @@ class RotmanHandler(BaseHTTPRequestHandler):
                     self._not_found()
             else:
                 self._not_found()
+
+        elif path == "/api/queue":
+            self._json({"items": tq.get_queue(), "stats": tq.stats()})
+
         else:
             self._not_found()
 
+    # ── POST ─────────────────────────────────────────────────────────────
     def do_POST(self):
         path = urlparse(self.path).path.rstrip("/")
 
-        # POST /api/projects
         if path == "/api/projects":
-            body = self._read_json()
-            topic = body.get("topic", "").strip()
+            body    = self._read_json()
+            topic   = body.get("topic", "").strip()
             channel = body.get("channel", "general")
             if not topic:
                 self._error(400, "topic required")
@@ -65,33 +67,63 @@ class RotmanHandler(BaseHTTPRequestHandler):
             project_id = pl.create_project(topic, channel)
             self._json({"id": project_id}, status=201)
 
-        # POST /api/projects/<id>/retry
         elif path.startswith("/api/projects/") and path.endswith("/retry"):
             parts = path.split("/")
             if len(parts) == 5:
-                project_id = parts[3]
-                ok = pl.retry_project(project_id)
+                ok = pl.retry_project(parts[3])
                 self._json({"ok": ok}) if ok else self._error(400, "Cannot retry this project")
             else:
                 self._not_found()
+
+        elif path == "/api/queue":
+            body    = self._read_json()
+            channel = body.get("channel", "general")
+            topics  = body.get("topics")
+            if topics and isinstance(topics, list):
+                created = tq.add_batch(topics, channel)
+                self._json({"created": len(created), "items": created}, status=201)
+                return
+            topic = body.get("topic", "").strip()
+            if not topic:
+                self._error(400, "topic or topics required")
+                return
+            item = tq.add_item(topic, channel)
+            self._json(item, status=201)
+
+        elif path == "/api/queue/process":
+            item = pl.process_next_from_queue()
+            if item:
+                self._json({"ok": True, "item": item})
+            else:
+                self._json({"ok": False, "message": "No pending items in queue"})
+
+        elif path == "/api/queue/clear_done":
+            removed = tq.clear_done()
+            self._json({"ok": True, "removed": removed})
+
         else:
             self._not_found()
 
+    # ── DELETE ───────────────────────────────────────────────────────────
     def do_DELETE(self):
-        path = urlparse(self.path).path.rstrip("/")
+        path  = urlparse(self.path).path.rstrip("/")
         parts = path.split("/")
 
-        # DELETE /api/projects/<id>
         if path.startswith("/api/projects/") and len(parts) == 4:
             ok = pl.delete_project(parts[3])
             self._json({"ok": ok}) if ok else self._not_found()
+
+        elif path.startswith("/api/queue/") and len(parts) == 4:
+            ok = tq.remove_item(parts[3])
+            self._json({"ok": ok}) if ok else self._not_found()
+
         else:
             self._not_found()
 
-    # ── HELPERS ─────────────────────────────────────────────────────────
+    # ── HELPERS ──────────────────────────────────────────────────────────
     def _read_json(self):
         length = int(self.headers.get("Content-Length", 0))
-        raw = self.rfile.read(length)
+        raw    = self.rfile.read(length)
         try:
             return json.loads(raw)
         except Exception:
@@ -110,7 +142,7 @@ class RotmanHandler(BaseHTTPRequestHandler):
             self._not_found()
             return
         mime, _ = mimetypes.guess_type(filepath)
-        mime = mime or "application/octet-stream"
+        mime     = mime or "application/octet-stream"
         with open(filepath, "rb") as f:
             data = f.read()
         self.send_response(200)
