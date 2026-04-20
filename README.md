@@ -9,17 +9,17 @@ Built for the [bitcoinfacil](https://www.youtube.com/@bitcoinfacil) and [PandaPo
 ## How it works
 
 ```
-Topic (user input)
+Topic (user input or queue)
       │
       ▼
-  [Ollama]  →  structured script (JSON)
+  [Ollama]  →  structured script (JSON) + channel persona
       │
       ├──▶  [edge-tts]   →  narration audio per scene
       ├──▶  [diffusers]  →  image per scene (CPU)
       └──▶  [MoviePy]    →  final .mp4
 ```
 
-Everything runs locally in a background thread. A web UI served at `http://localhost:7070` lets you manage projects and track pipeline progress in real time.
+Everything runs locally in a background thread. A web UI served at `http://localhost:7070` lets you manage projects, add topics to a queue and track pipeline progress in real time.
 
 ---
 
@@ -76,16 +76,40 @@ Open **http://localhost:7070** in your browser.
 
 ## Usage
 
+### Single video
+
 1. Click **+ New Video**
 2. Select the channel and describe the video
 3. Click **Generate** — the pipeline runs automatically:
-   - Script is written by the LLM
+   - Script is written by the LLM using the channel persona
    - Audio narration is synthesized for each scene
    - One image is generated per scene
    - Final video is assembled
 4. Track progress in real time via the pipeline log
 
+### Topic queue
+
+1. Open the **Queue** tab
+2. Enter one topic per line in the batch textarea and select the channel
+3. Click **Add** — all topics are saved with status `pending`
+4. Click **▶ Process Next** to start the next pending item
+5. The item status updates to `processing` and a pipeline project is created automatically
+6. Click **View →** on any processed item to open its pipeline project
+
 > Scheduling and social media posting are handled by a separate tool — [conduler](https://github.com/pantalipe/conduler).
+
+---
+
+## Channel personas
+
+Rotman supports per-channel tone and language configuration via persona files in `personas/`.
+
+| File | Channel | Description |
+|---|---|---|
+| `persona_bitcoinfacil.txt` | bitcoinfacil | Warm, educational, pt-BR — Bitcoin for general audiences |
+| `persona_pandapoints.txt` | PandaPoints | Product-focused, semi-formal Web3 tone |
+
+To add a new channel persona, create `personas/persona_<channel_slug>.txt` following the same structure. The slug must match the channel name used in the UI (lowercase, spaces replaced with underscores).
 
 ---
 
@@ -103,18 +127,22 @@ Without `HF_TOKEN`, images are generated locally via diffusers on CPU. Slower, b
 
 ```
 rotman/
-├── server.py          # HTTP server (stdlib only)
-├── pipeline.py        # Pipeline orchestrator (background thread)
+├── server.py           # HTTP server (stdlib only)
+├── pipeline.py         # Pipeline orchestrator (background thread)
+├── topic_queue.py      # Topic queue — batch input and process-next flow
 ├── requirements.txt
 ├── core/
-│   ├── llm.py         # Script generation via Ollama
-│   ├── tts.py         # Audio narration via edge-tts
-│   ├── imgen.py       # Image generation (diffusers CPU + HF API fallback)
-│   └── editor.py      # Video assembly via MoviePy
+│   ├── llm.py          # Script generation via Ollama + persona injection
+│   ├── tts.py          # Audio narration via edge-tts
+│   ├── imgen.py        # Image generation (diffusers CPU + HF API fallback)
+│   └── editor.py       # Video assembly via MoviePy
+├── personas/
+│   ├── persona_bitcoinfacil.txt
+│   └── persona_pandapoints.txt
 ├── ui/
-│   └── index.html     # Web interface
-├── db/                # Local JSON database (gitignored)
-└── output/            # Generated videos, images and audio (gitignored)
+│   └── index.html      # Web interface (Projects + Queue tabs)
+├── db/                 # Local JSON database (gitignored)
+└── output/             # Generated videos, images and audio (gitignored)
 ```
 
 ---
@@ -140,7 +168,7 @@ All pipeline steps run on CPU. The GPU is not used — diffusers runs in float32
 | Image generation per scene (diffusers CPU) | ~5–10 min |
 | Video assembly (MoviePy) | ~1–2 min |
 
-A 10-scene video takes roughly **1–2 hours** end-to-end on CPU-only hardware, dominated by image generation. Using `HF_TOKEN` for the SDXL API fallback reduces image generation to seconds.
+A 6-scene video takes roughly **1–2 hours** end-to-end on CPU-only hardware, dominated by image generation. Using `HF_TOKEN` for the SDXL API fallback reduces image generation to seconds.
 
 16 GB RAM is recommended if running Ollama and diffusers simultaneously to avoid swap.
 
@@ -148,6 +176,8 @@ A 10-scene video takes roughly **1–2 hours** end-to-end on CPU-only hardware, 
 
 ## Roadmap
 
-- [ ] Per-channel voice and tone configuration
+- [x] Per-channel voice and tone configuration (personas)
+- [x] Topic queue with batch input and process-next flow
 - [ ] Scene image preview in UI
 - [ ] GPU acceleration support (when hardware allows)
+- [ ] Auto-process queue (process all pending items sequentially without manual trigger)
