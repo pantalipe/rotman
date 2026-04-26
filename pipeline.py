@@ -11,7 +11,14 @@ from core.llm import generate_script
 from core.tts import generate_audio
 from core.imgen import generate_image
 from core.editor import build_video
+import sys
 import topic_queue as tq
+
+sys.path.insert(0, "C:/Users/panta/pandagent")
+try:
+    from panda_client import TASK_MODEL_MAP
+except ImportError:
+    TASK_MODEL_MAP = {}
 
 OUTPUT_ROOT = os.path.join(os.path.dirname(__file__), "output")
 DB_PATH = os.path.join(os.path.dirname(__file__), "db", "projects.json")
@@ -83,7 +90,10 @@ def _run_pipeline(project_id: str, queue_item_id: str = None):
 
         # Step 1 — Script
         _set_status(projects, project, "generating_script", "Generating script...")
-        script = generate_script(topic, channel)
+        task_key     = f"script_{channel.lower().replace('-', '')}"
+        script_model = TASK_MODEL_MAP.get(task_key, "phi3")
+        print(f"[pipeline] Routing '{channel}' → {script_model} (task_key: {task_key})")
+        script = generate_script(topic, channel, model=script_model)
         project["script"] = script
         _set_status(projects, project, "script_ready",
                     f"Script ready: \"{script['title']}\" — {len(script['scenes'])} scenes")
