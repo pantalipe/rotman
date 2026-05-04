@@ -16,6 +16,7 @@ output/
 
 # Database — local projects state
 db/projects.json
+db/queue.json
 
 # Models cache (diffusers / transformers baixam aqui)
 .cache/

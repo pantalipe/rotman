@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+---
+
+## [2.1] — 2026-05-04
+
+### Changed
+- `pipeline.py` migrated `TASK_MODEL_MAP` import from `sys.path` hack to
+  `from pandagent import TASK_MODEL_MAP` — requires pandagent installed as a package
+
+---
+
+## [v2.0] — 2026-03
+
+Complete rewrite with modular architecture, web UI and full pipeline automation.
+
 ### Added
 - `topic_queue.py` — topic queue module managing `db/queue.json` with full item
   lifecycle (pending → processing → done/error), batch input and process-next flow
