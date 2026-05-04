@@ -11,12 +11,10 @@ from core.llm import generate_script
 from core.tts import generate_audio
 from core.imgen import generate_image
 from core.editor import build_video
-import sys
 import topic_queue as tq
 
-sys.path.insert(0, "C:/Users/panta/pandagent")
 try:
-    from panda_client import TASK_MODEL_MAP
+    from pandagent import TASK_MODEL_MAP
 except ImportError:
     TASK_MODEL_MAP = {}
 
