@@ -19,6 +19,16 @@ All notable changes to this project are documented in this file.
 Complete rewrite with modular architecture, web UI and full pipeline automation.
 
 ### Added
+- Web UI served at `http://localhost:7070` — project management, pipeline status and log in real time
+- `pipeline.py` — pipeline orchestrator running in a background thread (non-blocking)
+- `core/llm.py` — LLM script generation via Ollama with retry logic and multi-strategy JSON extraction
+- `core/tts.py` — TTS narration via edge-tts (PT-BR and EN voices, free and unlimited)
+- `core/imgen.py` — image generation with dual mode: HuggingFace SDXL API (fast) + diffusers CPU fallback (offline)
+- `core/editor.py` — video assembly via MoviePy v2 with per-scene audio sync
+- `server.py` — HTTP server using Python stdlib only (zero external server dependencies)
+- `db/projects.json` — local JSON database for project state persistence
+- Retry and recover: failed projects can be retried from scratch via UI
+- `HF_TOKEN` environment variable for SDXL API fallback
 - `topic_queue.py` — topic queue module managing `db/queue.json` with full item
   lifecycle (pending → processing → done/error), batch input and process-next flow
 - Queue tab in the web UI — batch topic textarea, stats bar (pending/processing/done/error),
@@ -53,24 +63,6 @@ Complete rewrite with modular architecture, web UI and full pipeline automation.
 - Truncated JSON responses causing all 3 generation attempts to fail
 - `ImportError: cannot import name 'Queue' from 'queue'` — caused by `queue.py`
   filename shadowing the stdlib module; fixed by renaming to `topic_queue.py`
-
----
-
-## [v2.0] — 2026-03
-
-Complete rewrite with modular architecture, web UI and full pipeline automation.
-
-### Added
-- Web UI served at `http://localhost:7070` — project management, pipeline status and log in real time
-- `pipeline.py` — pipeline orchestrator running in a background thread (non-blocking)
-- `core/llm.py` — LLM script generation via Ollama with retry logic and multi-strategy JSON extraction
-- `core/tts.py` — TTS narration via edge-tts (PT-BR and EN voices, free and unlimited)
-- `core/imgen.py` — image generation with dual mode: HuggingFace SDXL API (fast) + diffusers CPU fallback (offline)
-- `core/editor.py` — video assembly via MoviePy v2 with per-scene audio sync
-- `server.py` — HTTP server using Python stdlib only (zero external server dependencies)
-- `db/projects.json` — local JSON database for project state persistence
-- Retry and recover: failed projects can be retried from scratch via UI
-- `HF_TOKEN` environment variable for SDXL API fallback
 
 ### Architecture
 - Modular `core/` layer: each pipeline step is an independent module
