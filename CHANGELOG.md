@@ -6,6 +6,25 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2.2] — 2026-05-05
+
+### Added
+- `conduler_bridge.py` — non-fatal bridge module that notifies conduler to schedule
+  the finished video after each successful pipeline run; POSTs to
+  `http://127.0.0.1:7071/api/jobs` with video path, channel-mapped platforms,
+  title and description extracted from the script
+- `CHANNEL_PLATFORMS` mapping in `conduler_bridge.py` — routes each channel slug
+  to its target platforms (`bitcoinfacil` → YouTube + Instagram,
+  `pandapoints` → YouTube + TikTok)
+- `CONDULER_URL` and `CONDULER_DELAY_MINUTES` env var support — override the
+  conduler base URL and scheduling delay without touching code
+
+### Changed
+- `pipeline.py` — calls `_schedule_video()` immediately after the `"done"` status
+  is set; conduler errors are logged as warnings and never fail the pipeline
+
+---
+
 ## [2.1] — 2026-05-04
 
 ### Changed

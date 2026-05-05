@@ -12,6 +12,7 @@ from core.tts import generate_audio
 from core.imgen import generate_image
 from core.editor import build_video
 import topic_queue as tq
+from conduler_bridge import schedule_video as _schedule_video
 
 try:
     from pandagent import TASK_MODEL_MAP
@@ -128,6 +129,8 @@ def _run_pipeline(project_id: str, queue_item_id: str = None):
 
         project["video_path"] = video_path
         _set_status(projects, project, "done", "Pipeline complete!")
+
+        _schedule_video(video_path, channel, script)
 
         if queue_item_id:
             tq.mark_done(queue_item_id)

@@ -178,6 +178,7 @@ A 6-scene video takes roughly **1–2 hours** end-to-end on CPU-only hardware, d
 
 - [x] Per-channel voice and tone configuration (personas)
 - [x] Topic queue with batch input and process-next flow
+- [x] conduler bridge — finished videos are automatically handed off to conduler for scheduling
 - [ ] Scene image preview in UI
 - [ ] GPU acceleration support (when hardware allows)
 - [ ] Auto-process queue (process all pending items sequentially without manual trigger)
